@@ -1,0 +1,51 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <!-- 防止浏览器缓存导致时间不更新 -->
+    <meta http-equiv="Cache-Control" content="no-cache, no-store, must-revalidate">
+    <meta http-equiv="Pragma" content="no-cache">
+    <meta http-equiv="Expires" content="0">
+    <link rel="shortcut icon" href="/assets/favicon.ico" type="image/x-icon" />
+    <title>云资产监控面板</title>
+    <link rel="stylesheet" href="style.css">
+</head>
+<body>
+    <div class="header">
+        <h1>☁️ 云服务器与域名资产监控</h1>
+        <p class="subtitle">实时查看所有云资源的到期状态与续费情况</p>
+    </div>
+
+    <div class="container">
+
+        <!-- 统计卡片容器 -->
+        <div class="stats-cards" id="statsCards"></div>
+        
+        <!-- 表格容器 -->
+        <div class="table-container" id="tableContainer">
+            <table id="assetsTable">
+                <thead>
+                    <tr>
+                        <th>名称</th>
+                        <th>提供商</th>
+                        <th>续费价格</th>
+                        <th>到期时间</th>
+                        <th>下次续费时间</th>
+                        <th>剩余时间</th>
+                        <th>状态</th>
+                        <th>备注</th>
+                        <th>操作</th>
+                    </tr>
+                </thead>
+                <tbody></tbody>
+            </table>
+        </div>
+
+        
+    </div>
+
+    <script src="data.js"></script>
+    <script src="script.js"></script>
+</body>
+</html>
