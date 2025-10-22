@@ -120,26 +120,5 @@ const REFRESH_INTERVAL = 60 * 60 * 1000; // 1小时
 
 **Star ⭐ 本项目，让你的云资产不再过期！**
 
-```
-
----
-
-## 使用说明
-
-1. **创建文件**：在你的项目根目录创建 `README.md`
-2. **复制粘贴**：将上面的完整内容复制进去
-3. **替换占位符**：
-   - `你的用户名` → 你的 GitHub 用户名
-   - 预览截图 → 部署后替换为真实截图
-
----
-
-## 额外建议
-
-如果你还需要：
-- **LICENSE 文件**：我可以帮你生成 MIT 许可证
-- **GitHub Actions 自动部署**：配置自动部署到 Pages
-- **项目徽章**：添加构建状态、版本等徽章
-
-告诉我你需要什么，我继续帮你完善！ 🚀
-```
+[![MIT License](https://img.shields.io/badge/License-MIT-green.svg)](https://choosealicense.com/licenses/mit/)
+[![GitHub Pages](https://img.shields.io/badge/Deploy-GitHub%20Pages-blue)](https://你的用户名.github.io/cloud-assets)
