@@ -37,7 +37,7 @@
 ### 1. 克隆仓库
 
 ```bash
-git clone https://github.com/你的用户名/cloud-assets.git
+git clone https://github.com/shuo0261/cloud-assets.git
 cd cloud-assets
 ```
 
@@ -65,7 +65,7 @@ cd cloud-assets
 | **Vercel**           | `vercel` 一键部署                            |
 | **Cloudflare Pages** | 绑定仓库即可                                 |
 
-> 部署后访问：`https://你的用户名.github.io/cloud-assets`
+> 部署后访问：`https://shuo0261.github.io/cloud-assets`
 
 ---
 
