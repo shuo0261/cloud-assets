@@ -1,4 +1,6 @@
 # ☁️ Cloud Assets – 云资产到期监控面板
+[![MIT License](https://img.shields.io/badge/License-MIT-green.svg)](https://choosealicense.com/licenses/mit/)
+[![GitHub Pages](https://img.shields.io/badge/Deploy-GitHub%20Pages-blue)](https://你的用户名.github.io/cloud-assets)
 
 一个**轻量、美观、响应式**的网页工具，帮你实时查看：
 
@@ -120,5 +122,3 @@ const REFRESH_INTERVAL = 60 * 60 * 1000; // 1小时
 
 **Star ⭐ 本项目，让你的云资产不再过期！**
 
-[![MIT License](https://img.shields.io/badge/License-MIT-green.svg)](https://choosealicense.com/licenses/mit/)
-[![GitHub Pages](https://img.shields.io/badge/Deploy-GitHub%20Pages-blue)](https://你的用户名.github.io/cloud-assets)
