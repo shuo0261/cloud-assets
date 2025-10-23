@@ -295,7 +295,7 @@ scheduleRefresh();
 
     function updateSortArrows() {
         document.querySelectorAll('th .sort-arrow').forEach(el => el.textContent = '');
-        const arrows = { 1: 'Ascending', 2: 'Descending' };
+        const arrows = { 1: '▲', 2: '▼' };
         if (sortState.price)  document.querySelector('th[data-sort="price"] .sort-arrow').textContent = arrows[sortState.price];
         if (sortState.exp)    document.querySelector('th[data-sort="exp"] .sort-arrow').textContent   = arrows[sortState.exp];
         if (sortState.next)   document.querySelector('th[data-sort="next"] .sort-arrow').textContent  = arrows[sortState.next];
