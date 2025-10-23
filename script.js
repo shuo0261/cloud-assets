@@ -438,28 +438,69 @@ scheduleRefresh();
     // =============================================================
     // 11. 本地保存 / 加载
     // =============================================================
+    // 保存按钮（增强：添加提示 + 错误处理）
     const saveBtn = document.createElement('button');
-    saveBtn.textContent='💾 保存到本地';
-    saveBtn.style.cssText='margin-left:10px;padding:8px 14px;background:#f59e0b;color:#fff;border:none;border-radius:6px;font-size:0.9rem;cursor:pointer;';
-    saveBtn.onclick=()=>localStorage.setItem('cloudAssets',JSON.stringify(assets));
-
-    const loadBtn = document.createElement('button');
-    loadBtn.textContent='📂 加载本地数据';
-    loadBtn.style.cssText='margin-left:10px;padding:8px 14px;background:#8b5cf6;color:#fff;border:none;border-radius:6px;font-size:0.9rem;cursor:pointer;';
-    loadBtn.onclick=()=>{
-        const s=localStorage.getItem('cloudAssets');
-        if(s && confirm('加载本地数据会覆盖当前数据，确认吗？')){
-            Object.assign(assets, JSON.parse(s));
-            renderAll();
+    saveBtn.textContent = '💾 保存到本地';
+    saveBtn.style.cssText = 'margin-left:10px;padding:8px 14px;background:#f59e0b;color:#fff;border:none;border-radius:6px;font-size:0.9rem;cursor:pointer;';
+    saveBtn.onclick = () => {
+        try {
+            if (typeof assets === 'undefined') {
+                alert('错误：数据未加载！请刷新页面。');
+                console.error('assets 未定义');
+                return;
+            }
+            localStorage.setItem('cloudAssets', JSON.stringify(assets));
+            alert('✅ 保存成功！数据已存入 localStorage。');
+            console.log('保存成功:', localStorage.getItem('cloudAssets'));
+        } catch (e) {
+            alert('❌ 保存失败：' + e.message + '\n\n可能原因：浏览器不支持 localStorage（隐私模式？）');
+            console.error('保存错误:', e);
         }
     };
 
+    // 加载按钮
+    const loadBtn = document.createElement('button');
+    loadBtn.textContent = '📂 加载本地数据';
+    loadBtn.style.cssText = 'margin-left:10px;padding:8px 14px;background:#8b5cf6;color:#fff;border:none;border-radius:6px;font-size:0.9rem;cursor:pointer;';
+    loadBtn.onclick = () => {
+    try {
+        const saved = localStorage.getItem('cloudAssets');
+        if (!saved) {
+            alert('没有找到本地数据！');
+            return;
+        }
+
+        if (!confirm('加载本地数据将覆盖当前数据。继续吗?')) {
+            return;
+        }
+
+        const newData = JSON.parse(saved);
+
+        // 关键修复：不直接赋值，而是清空 + 推入
+        assets.length = 0;
+        assets.push(...newData);
+
+        renderAll();
+        alert('数据加载成功！');
+    } catch (e) {
+        alert('加载失败: ' + e.message);
+        console.error('加载错误:', e);
+    }
+};
+
+    // 延迟插入所有元素
     setTimeout(() => {
-        const parent = searchBox.parentNode;
-        if (parent) {
+        const container = document.querySelector('.container');
+        if (container) {
+            container.style.paddingTop = '70px';
+            container.insertBefore(searchBox, document.querySelector('.stats-cards'));
+            const parent = searchBox.parentNode;
             parent.insertBefore(exportBtn, searchBox.nextSibling);
-            exportBtn.parentNode.insertBefore(saveBtn, exportBtn.nextSibling);
-            saveBtn.parentNode.insertBefore(loadBtn, saveBtn.nextSibling);
+            parent.insertBefore(saveBtn, exportBtn.nextSibling);
+            parent.insertBefore(loadBtn, saveBtn.nextSibling);
+            console.log('✅ 按钮组插入成功');
+        } else {
+            console.error('❌ .container 未找到');
         }
     }, 200);
 
