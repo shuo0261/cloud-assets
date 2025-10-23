@@ -105,7 +105,8 @@ document.body.appendChild(countdownEl);
 function updateCountdown() {
     const mins = Math.floor(timeLeft / 60).toString().padStart(2, '0');
     const secs = (timeLeft % 60).toString().padStart(2, '0');
-    countdownEl.textContent = `刷新倒计时 ${mins}:${secs}`;
+    //countdownEl.textContent = `刷新倒计时 ${mins}:${secs}`;
+    countdownEl.textContent = `${mins}:${secs}`;
     timeLeft--;
 }
 
@@ -129,54 +130,53 @@ const countdownInterval = setInterval(updateCountdown, 1000);
 // 启动首次自动刷新
 scheduleRefresh();
 
-// 可选：手动刷新按钮（放右上角）
-const refreshBtn = document.createElement('button');
-refreshBtn.textContent = '手动刷新';
-refreshBtn.style.cssText = `
-    position: fixed;
-    top: 20px;
-    right: 20px;
-    background: #6366f1;
-    color...
-    padding: 6px 12px;
-    border: none;
-    border-radius: 6px;
-    font-size: 0.8rem;
-    cursor: pointer;
-    z-index: 1000;
-    box-shadow: 0 2px 6px rgba(99,102,241,0.3);
-`;
-refreshBtn.onclick = () => {
-    renderTable();
-    renderStats();
-    timeLeft = REFRESH_INTERVAL / 1000;
-    updateCountdown();
-};
-document.body.appendChild(refreshBtn);
-
 (() => {
     'use strict';
 
     // =============================================================
-    // 1. 当前时间显示
+    // 1. 顶部工具栏（时间 + 刷新按钮）
     // =============================================================
+    const toolbar = document.createElement('div');
+    toolbar.id = 'top-toolbar';
+    toolbar.style.cssText = `
+        position:fixed;top:0;left:0;right:0;height:50px;
+        background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+        color:#fff;z-index:1000;
+        display:flex;align-items:center;justify-content:space-between;
+        padding:0 16px;font-size:0.85rem;
+        box-shadow:0 4px 12px rgba(102, 126, 234, 0.3);
+        backdrop-filter:blur(8px);
+        flex-wrap:wrap; 
+    `;
+    document.body.appendChild(toolbar);
+    document.body.appendChild(toolbar);
+
+    // 时间显示（左）
     const timeEl = document.createElement('div');
     timeEl.id = 'current-time';
-    timeEl.style.cssText = `
-        position:fixed;top:20px;left:20px;color:#fff;font-size:0.9rem;
-        background:rgba(0,0,0,0.6);padding:6px 12px;border-radius:6px;z-index:1000;
-        backdrop-filter:blur(4px);
-    `;
-    document.body.appendChild(timeEl);
+    timeEl.style.cssText = 'white-space:nowrap;';
+    toolbar.appendChild(timeEl);
+
     function updateTime() {
         const now = new Date();
-        timeEl.textContent = `Current Time: ${now.toLocaleString('zh-CN', {
+        timeEl.textContent = `${now.toLocaleString('zh-CN', {
             year:'numeric',month:'2-digit',day:'2-digit',
             hour:'2-digit',minute:'2-digit',second:'2-digit'
         })}`;
     }
     updateTime();
     setInterval(updateTime, 1000);
+
+    // 手动刷新按钮（右）
+    const manualBtn = document.createElement('button');
+    manualBtn.textContent = '刷新';
+    manualBtn.style.cssText = `
+        background:#6366f1;color:#fff;border:none;border-radius:6px;
+        padding:6px 12px;font-size:0.8rem;cursor:pointer;
+        box-shadow:0 1px 3px rgba(99,102,241,0.3);
+    `;
+    manualBtn.onclick = () => { renderAll(); timeLeft = REFRESH_INTERVAL/1000; updateCountdown(); };
+    toolbar.appendChild(manualBtn);
 
     // =============================================================
     // 2. 搜索框
@@ -190,45 +190,44 @@ document.body.appendChild(refreshBtn);
         transition:border 0.2s;
     `;
     searchBox.addEventListener('input', renderAll);
-    document.querySelector('.container').insertBefore(searchBox, document.querySelector('.stats-cards'));
+
+    // 延迟插入，确保 .container 已存在
+    setTimeout(() => {
+        const container = document.querySelector('.container');
+        if (container) {
+            container.style.paddingTop = '70px';  // 避免遮挡标题
+            container.insertBefore(searchBox, document.querySelector('.stats-cards'));
+        }
+    }, 100);
 
     // =============================================================
-    // 3. 排序状态：0=默认, 1=升序, 2=降序
-    // =============================================================
-    const sortState = { price: 0, exp: 0, next: 0, remain: 0 }; // 新增 remain
+    // 3. 排序状态
+    // ===================================================
+    const sortState = { price: 0, exp: 0, next: 0, remain: 0 };
 
     // =============================================================
-    // 4. 续费价格解析
+    // 4. 续费价格解析（年化 + 货币换算）
     // =============================================================
     function parsePrice(str) {
         if (!str || str.toLowerCase() === 'free' || /一次性/.test(str)) {
             return { value: 0, isFree: true, original: str };
         }
+        const m = str.match(/([¥$])?([\d.]+)\/?(.+)?/i);
+        if (!m) return { value: Infinity, isFree: false, original: str };
 
-    const m = str.match(/([¥$])?([\d.]+)\/?(.+)?/i);
-    if (!m) return { value: Infinity, isFree: false, original: str };
+        const currency = m[1] || '¥';
+        const num = parseFloat(m[2]);
+        const unit = (m[3] || '').toLowerCase();
 
-    const currency = m[1] || '¥';
-    const num = parseFloat(m[2]);
-    const unit = (m[3] || '').toLowerCase();
+        const monthMul = { '月': 1, '季': 3, '年': 12 }[unit] || 1;
+        const rmb = currency === '$' ? num * 7.2 : num;
+        const yearly = rmb * (12 / monthMul);
 
-    // 时间换算系数（月）
-    const monthMul = { '月': 1, '季': 3, '年': 12 }[unit] || 1;
+        return { value: yearly, isFree: false, original: str };
+    }
 
-    // 货币换算
-    const rmb = currency === '$' ? num * 7.2 : num;
-
-    // 年化价格（元/年）
-    const yearly = rmb * (12 / monthMul);
-
-    return {
-        value: yearly,        // 用于排序
-        isFree: false,
-        original: str         // 用于显示
-    };
-}
     // =============================================================
-    // 5. 获取排序后的数据（全部使用 calculateRemainingDays）
+    // 5. 获取排序后的数据
     // =============================================================
     function getSortedData(base = assets) {
         const q = searchBox.value.toLowerCase();
@@ -238,47 +237,35 @@ document.body.appendChild(refreshBtn);
             (a.notes && a.notes.toLowerCase().includes(q))
         );
 
-        // // 默认排序：剩余天数倒序（最紧急在前）
-        // if (sortState.price === 0 && sortState.exp === 0 && sortState.next === 0 && sortState.remain === 0) {
-        //     list.sort((a, b) => {
-        //         const da = calculateRemainingDays(a.expirationDate);
-        //         const db = calculateRemainingDays(b.expirationDate);
-        //         return da - db; // 小 → 大：越紧急越前
-        //     });
-        // }
-        // 默认排序：剩余天数越大越前（续费周期长 → 排前面）
+        // 默认：剩余天数越大越前
         if (sortState.price === 0 && sortState.exp === 0 && sortState.next === 0 && sortState.remain === 0) {
             list.sort((a, b) => {
                 const da = calculateRemainingDays(a.expirationDate);
                 const db = calculateRemainingDays(b.expirationDate);
-                return db - da;  // 改为 db - da
+                return db - da;
             });
         }
-        // 续费价格排序
         else if (sortState.price !== 0) {
             list.sort((a, b) => {
                 const pa = parsePrice(a.renewalPrice), pb = parsePrice(b.renewalPrice);
                 if (pa.isFree && pb.isFree) return 0;
-                if (pa.isFree) return sortState.price === 1 ? 1 : -1;
-                if (pb.isFree) return sortState.price === 1 ? -1 : 1;
+                if (pa.isFree) return sortState.price === 1 ? -1 : 1;
+                if (pb.isFree) return sortState.price === 1 ? 1 : -1;
                 return sortState.price === 1 ? pa.value - pb.value : pb.value - pa.value;
             });
         }
-        // 到期时间排序（仍按日期）
         else if (sortState.exp !== 0) {
             list.sort((a, b) => {
                 const da = new Date(a.expirationDate), db = new Date(b.expirationDate);
                 return sortState.exp === 1 ? da - db : db - da;
             });
         }
-        // 下次续费时间排序（仍按日期）
         else if (sortState.next !== 0) {
             list.sort((a, b) => {
                 const da = new Date(a.nextRenewalDate), db = new Date(b.nextRenewalDate);
                 return sortState.next === 1 ? da - db : db - da;
             });
         }
-        // 剩余时间排序（新增）
         else if (sortState.remain !== 0) {
             list.sort((a, b) => {
                 const da = calculateRemainingDays(a.expirationDate);
@@ -291,7 +278,7 @@ document.body.appendChild(refreshBtn);
     }
 
     // =============================================================
-    // 6. 表头点击排序 + 箭头
+    // 6. 表头排序
     // =============================================================
     function makeSortable(th, type) {
         th.style.cursor = 'pointer';
@@ -308,8 +295,7 @@ document.body.appendChild(refreshBtn);
 
     function updateSortArrows() {
         document.querySelectorAll('th .sort-arrow').forEach(el => el.textContent = '');
-        const arrows = { 1: '▲', 2: '▼' };
-
+        const arrows = { 1: 'Ascending', 2: 'Descending' };
         if (sortState.price)  document.querySelector('th[data-sort="price"] .sort-arrow').textContent = arrows[sortState.price];
         if (sortState.exp)    document.querySelector('th[data-sort="exp"] .sort-arrow').textContent   = arrows[sortState.exp];
         if (sortState.next)   document.querySelector('th[data-sort="next"] .sort-arrow').textContent  = arrows[sortState.next];
@@ -317,7 +303,7 @@ document.body.appendChild(refreshBtn);
     }
 
     // =============================================================
-    // 7. 表格渲染（绑定剩余时间列）
+    // 7. 表格渲染
     // =============================================================
     const originalRenderTable = window.renderTable || (() => {});
     window.renderTable = function (data = assets) {
@@ -346,14 +332,13 @@ document.body.appendChild(refreshBtn);
             tbody.appendChild(tr);
         });
 
-        // 绑定表头排序（只绑定一次）
         setTimeout(() => {
             const ths = document.querySelectorAll('#assetsTable thead th');
             if (!ths[2].hasAttribute('data-sort')) {
-                ths[2].setAttribute('data-sort', 'price');   // 续费价格
-                ths[3].setAttribute('data-sort', 'exp');     // 到期时间
-                ths[4].setAttribute('data-sort', 'next');    // 下次续费
-                ths[5].setAttribute('data-sort', 'remain');  // 剩余时间（第6列）
+                ths[2].setAttribute('data-sort', 'price');
+                ths[3].setAttribute('data-sort', 'exp');
+                ths[4].setAttribute('data-sort', 'next');
+                ths[5].setAttribute('data-sort', 'remain');
                 ths.forEach(th => {
                     const t = th.getAttribute('data-sort');
                     if (t) makeSortable(th, t);
@@ -391,7 +376,9 @@ document.body.appendChild(refreshBtn);
 
     const chartContainer = document.createElement('div');
     chartContainer.style.cssText = 'margin:30px 0;height:300px;';
-    document.querySelector('.container').insertBefore(chartContainer, document.querySelector('.table-container'));
+    setTimeout(() => {
+        document.querySelector('.container').insertBefore(chartContainer, document.querySelector('.table-container'));
+    }, 100);
 
     let chartInstance = null;
     function renderPieChart(data) {
@@ -447,7 +434,6 @@ document.body.appendChild(refreshBtn);
     exportBtn.textContent='📤 导出 CSV';
     exportBtn.style.cssText='margin-left:10px;padding:8px 14px;background:#10b981;color:#fff;border:none;border-radius:6px;font-size:0.9rem;cursor:pointer;';
     exportBtn.onclick=exportToCSV;
-    searchBox.parentNode.insertBefore(exportBtn, searchBox.nextSibling);
 
     // =============================================================
     // 11. 本地保存 / 加载
@@ -456,7 +442,6 @@ document.body.appendChild(refreshBtn);
     saveBtn.textContent='💾 保存到本地';
     saveBtn.style.cssText='margin-left:10px;padding:8px 14px;background:#f59e0b;color:#fff;border:none;border-radius:6px;font-size:0.9rem;cursor:pointer;';
     saveBtn.onclick=()=>localStorage.setItem('cloudAssets',JSON.stringify(assets));
-    exportBtn.parentNode.insertBefore(saveBtn, exportBtn.nextSibling);
 
     const loadBtn = document.createElement('button');
     loadBtn.textContent='📂 加载本地数据';
@@ -468,7 +453,15 @@ document.body.appendChild(refreshBtn);
             renderAll();
         }
     };
-    saveBtn.parentNode.insertBefore(loadBtn, saveBtn.nextSibling);
+
+    setTimeout(() => {
+        const parent = searchBox.parentNode;
+        if (parent) {
+            parent.insertBefore(exportBtn, searchBox.nextSibling);
+            exportBtn.parentNode.insertBefore(saveBtn, exportBtn.nextSibling);
+            saveBtn.parentNode.insertBefore(loadBtn, saveBtn.nextSibling);
+        }
+    }, 200);
 
     // =============================================================
     // 12. 自动刷新倒计时
@@ -486,25 +479,20 @@ document.body.appendChild(refreshBtn);
     function updateCountdown(){ 
         const m=Math.floor(timeLeft/60).toString().padStart(2,'0'); 
         const s=(timeLeft%60).toString().padStart(2,'0'); 
-        countdownEl.textContent=`刷新倒计时 ${m}:${s}`; 
+        //countdownEl.textContent=`刷新倒计时 ${m}:${s}`; 
+        countdownEl.textContent=`${m}:${s}`; 
         timeLeft--; 
     }
     updateCountdown(); 
-    const cdInt=setInterval(updateCountdown,1000);
+    setInterval(updateCountdown,1000);
 
     function scheduleRefresh(){
         setTimeout(()=>{ renderAll(); timeLeft=REFRESH_INTERVAL/1000; updateCountdown(); scheduleRefresh(); }, REFRESH_INTERVAL);
     }
     scheduleRefresh();
 
-    const manualBtn = document.createElement('button');
-    manualBtn.textContent='Manual Refresh';
-    manualBtn.style.cssText='position:fixed;top:20px;right:20px;background:#6366f1;color:#fff;padding:6px 12px;border:none;border-radius:6px;font-size:0.8rem;cursor:pointer;z-index:1000;box-shadow:0 2px 6px rgba(99,102,241,0.3);';
-    manualBtn.onclick=()=>{ renderAll(); timeLeft=REFRESH_INTERVAL/1000; updateCountdown(); };
-    document.body.appendChild(manualBtn);
-
     // =============================================================
-    // 13. 统一渲染入口
+    // 13. 统一渲染
     // =============================================================
     function renderAll(){
         const data = getSortedData(assets);
@@ -515,5 +503,5 @@ document.body.appendChild(refreshBtn);
 
     // 启动
     chartScript.onload = () => setTimeout(renderAll,100);
-    setTimeout(renderAll,200);
+    setTimeout(renderAll,300);
 })();
